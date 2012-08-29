@@ -1,5 +1,6 @@
 module CanCan
 
+  # Something here
   # This module is designed to be included into an Ability class. This will
   # provide the "can" methods for defining and checking abilities.
   #

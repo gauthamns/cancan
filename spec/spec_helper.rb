@@ -23,7 +23,7 @@ end
 class Ability
   include CanCan::Ability
 
-  def initialize(user)
+  def initialize(user, scope_roles)
   end
 end
 

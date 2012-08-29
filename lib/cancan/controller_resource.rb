@@ -26,12 +26,23 @@ module CanCan
       authorize_resource
     end
 
+    #def load_resource
+    #  unless skip?(:load)
+    #    if load_instance?
+    #      self.resource_instance ||= load_resource_instance
+    #    elsif load_collection?
+    #      self.collection_instance ||= load_collection
+    #    end
+    #  end
+    #end
+
+    # Only loading the instance. No need of loading the collection. Will be taken care by the controller itself.
     def load_resource
       unless skip?(:load)
         if load_instance?
           self.resource_instance ||= load_resource_instance
-        elsif load_collection?
-          self.collection_instance ||= load_collection
+          # Load the ability with the obtained resource.
+          load_current_ability resource_instance
         end
       end
     end
@@ -61,25 +72,35 @@ module CanCan
 
     protected
 
+    # Do not build the resource. Only find the resource.
     def load_resource_instance
       if !parent? && new_actions.include?(@params[:action].to_sym)
         build_resource
       elsif id_param || @options[:singleton]
         find_resource
+
       end
     end
+
+    #def load_resource_instance
+    #        if !parent? && new_actions.include?(@params[:action].to_sym)
+    #          build_resource
+    #        elsif id_param || @options[:singleton]
+    #          find_resource
+    #        end
+    #      end
 
     def load_instance?
       parent? || member_action?
     end
 
-    def load_collection?
-      resource_base.respond_to?(:accessible_by) && !current_ability.has_block?(authorization_action, resource_class)
-    end
-
-    def load_collection
-      resource_base.accessible_by(current_ability, authorization_action)
-    end
+    #def load_collection?
+    #  resource_base.respond_to?(:accessible_by) && !current_ability.has_block?(authorization_action, resource_class)
+    #end
+    #
+    #def load_collection
+    #  resource_base.accessible_by(current_ability, authorization_action)
+    #end
 
     def build_resource
       resource = resource_base.new(resource_params || {})
@@ -133,7 +154,7 @@ module CanCan
     end
 
     def member_action?
-      new_actions.include?(@params[:action].to_sym) || @options[:singleton] || ( (@params[:id] || @params[@options[:id_param]]) && !collection_actions.include?(@params[:action].to_sym))
+      new_actions.include?(@params[:action].to_sym) || @options[:singleton] || ((@params[:id] || @params[@options[:id_param]]) && !collection_actions.include?(@params[:action].to_sym))
     end
 
     # Returns the class used for this resource. This can be overriden by the :class option.
@@ -141,10 +162,14 @@ module CanCan
     # only be used for authorization, not loading since there's no class to load through.
     def resource_class
       case @options[:class]
-      when false  then name.to_sym
-      when nil    then namespaced_name.to_s.camelize.constantize
-      when String then @options[:class].constantize
-      else @options[:class]
+        when false then
+          name.to_sym
+        when nil then
+          namespaced_name.to_s.camelize.constantize
+        when String then
+          @options[:class].constantize
+        else
+          @options[:class]
       end
     end
 
@@ -207,6 +232,10 @@ module CanCan
       @controller.send(:current_ability)
     end
 
+    def load_current_ability(resource)
+      @controller.send(:load_current_ability, resource)
+    end
+
     def name
       @name || name_from_controller
     end
@@ -253,7 +282,7 @@ module CanCan
     private
 
     def extract_key(value)
-       value.to_s.underscore.gsub('/', '_')
+      value.to_s.underscore.gsub('/', '_')
     end
   end
 end

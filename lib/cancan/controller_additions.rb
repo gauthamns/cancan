@@ -349,7 +349,20 @@ module CanCan
     # Notice it is important to cache the ability object so it is not
     # recreated every time.
     def current_ability
-      @current_ability ||= ::Ability.new(current_user)
+      @current_ability ||= ::Ability.new(current_user, scope_roles)
+    end
+
+    # Loads the ability from the resource.
+    def load_current_ability(resource)
+      scope_role_hash = resource.send(:get_scope_roles, current_user)
+      @current_ability ||= ::Ability.new(current_user, scope_role_hash)
+    end
+
+    # Scope roles
+    def scope_roles
+      # If we have come here, it means there is no resource and has to be loaded from the
+      # controller. Every controller has to specify the get_scope_roles function.
+      send(:get_scope_roles)
     end
 
     # Use in the controller or view to check the user's permission for a given action
