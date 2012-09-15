@@ -354,15 +354,19 @@ module CanCan
 
     # Loads the ability from the resource.
     def load_current_ability(resource)
-      scope_role_hash = resource.send(:get_scope_roles, current_user)
-      @current_ability ||= ::Ability.new(current_user, scope_role_hash)
+      if @current_ability.blank?
+        @current_ability = current_ability_for_resource resource
+      end
+
+      # Return the current ability.
+      @current_ability
     end
 
     # Scope roles
     def scope_roles
       # If we have come here, it means there is no resource and has to be loaded from the
       # controller. Every controller has to specify the get_scope_roles function.
-      send(:get_scope_roles)
+      try(:get_scope_roles)
     end
 
     # Use in the controller or view to check the user's permission for a given action
@@ -386,6 +390,24 @@ module CanCan
     # This simply calls "can?" on the current_ability. See Ability#can?.
     def can?(*args)
       current_ability.can?(*args)
+    end
+
+    # What if we want to find if user has permission for something for a particular resource scope?
+    # So we have special can? and cannot? for that.
+    def can_for_resource_scope?(resource, *args)
+      current_ability_for_resource(resource).can?(*args)
+    end
+
+    def cannot_for_resource_scope?(resource, *args)
+      current_ability_for_resource(resource).cannot?(*args)
+    end
+
+    # Loads the ability for the given resource.
+    def current_ability_for_resource(resource)
+      scope_role_hash = {}
+      scope_role_hash =
+          resource.try(:get_scope_roles, current_user) if resource.respond_to?(:get_scope_roles)
+      ::Ability.new(current_user, scope_role_hash)
     end
 
     # Convenience method which works the same as "can?" but returns the opposite value.

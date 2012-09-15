@@ -109,9 +109,11 @@ module CanCan
 
     def assign_attributes(resource)
       resource.send("#{parent_name}=", parent_resource) if @options[:singleton] && parent_resource
-      initial_attributes.each do |attr_name, value|
-        resource.send("#{attr_name}=", value)
-      end
+
+      # No need to do any initial attributes loading since that is now stripped off of the ability.
+      #initial_attributes.each do |attr_name, value|
+      #  resource.send("#{attr_name}=", value)
+      #end
       resource
     end
 
